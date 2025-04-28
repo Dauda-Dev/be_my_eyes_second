@@ -20,7 +20,8 @@ gradio
 faster-whisper
 mediapipe
 opencv-python
-dlib
+#dlib
 #face-recognition
 numpy
 imutils
+ffmpeg-python
