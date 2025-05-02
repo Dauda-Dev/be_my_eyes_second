@@ -25,3 +25,8 @@ opencv-python
 numpy
 imutils
 ffmpeg-python
+scipy
+groq
+dotenv
+mediapipe
+opencv-python
