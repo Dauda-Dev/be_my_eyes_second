@@ -3,7 +3,8 @@ import asyncio
 
 client = Groq()
 
-async def translate_text(text: str, lang = 'Yoruba') -> str:
+
+async def translate_text(text: str, lang: str = 'English') -> str:
     def sync_call():
         res = client.chat.completions.create(
             model="gemma2-9b-it",

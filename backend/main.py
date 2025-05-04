@@ -10,11 +10,11 @@ from backend.audio.speaker_estimation import estimate_speaker
 # from backend.model.yoruba_transcriber import transcribe_and_translate
 from backend.model.groq.groq_transcriber import transcribe_audio
 from backend.model.groq.translator import translate_text
-from backend.audio.volume_check import get_audio_volume
-from backend.audio.volume_check import is_valid_transcription, convert_aac_to_wav
+from backend.audio.volume_check import get_audio_volume, check_volume_threshold
+from backend.audio.volume_check import is_valid_transcription
 from backend.images.bounding_box_drawer import encode_image_to_base64, draw_bounding_boxes_on_image
-
-AUDIO_VOLUME_THRESHOLD = 0.01  # 🔇 Adjust this as needed
+from backend.errorHandler.error import volume_error
+from backend.audio.clean_audio import clean_audio
 
 
 async def handle_connection(websocket):
@@ -29,6 +29,10 @@ async def handle_connection(websocket):
             timestamp = data["timestamp"]
             image = decode_image(data["image"])
             audio_path = decode_audio(data["audio"])
+            print(audio_path)
+
+            transcribe_language = data["transcribe_lang"]
+            translate_language = data["translate_lang"]
 
             image_width = data.get("image_width")
             image_height = data.get("image_height")
@@ -37,27 +41,17 @@ async def handle_connection(websocket):
             if image_width and image_height:
                 frame_dim = [image_height, image_width]
 
-            # print(audio_path)
-
             # Step 1️⃣: Check audio volume
-            # wav_path = convert_aac_to_wav(audio_path)
-            # volume = get_audio_volume(wav_path)
-            # print(f"🔊 Volume: {volume:.5f}")
-            # if volume < AUDIO_VOLUME_THRESHOLD:
-            #     print("⚠️ Audio too quiet — skipping transcription")
-            #     await websocket.send(json.dumps({
-            #         "transcription": {
-            #             "speaker_id": "None",
-            #             "text": "[Too quiet to transcribe]"
-            #         },
-            #         "bboxes": [{
-            #             "bbox": None,
-            #             "speaker_id": "None",
-            #             "frame_dim": [image.shape[0], image.shape[1]]
-            #         }]
-            #     }))
-            #     continue
 
+            volume = get_audio_volume(audio_path)
+            print(f"🔊 Volume: {volume:.5f}")
+            if check_volume_threshold(volume) is False:
+                print("⚠️ Audio too quiet — skipping transcription")
+                await websocket.send(json.dumps(volume_error))
+                continue
+
+            cleaned_audio_path = clean_audio(audio_path)
+            print(f'cleaned audio output')
             faces = detect_faces(image)
 
             # if faces is None or len(faces) == 0:
@@ -67,17 +61,17 @@ async def handle_connection(websocket):
             # transcription = transcribe(audio_path)
 
             # transcription, translation = transcribe_and_translate(audio_path)
-            transcription = await transcribe_audio(audio_path)
+            transcription = await transcribe_audio(cleaned_audio_path, transcribe_language)
 
             print(f'{transcription} ')
             if not is_valid_transcription(transcription):
                 print("⚠️ Ignoring low-quality transcription")
                 return  # or continue
 
-            translation = await translate_text(transcription)
+            translation = await translate_text(transcription, translate_language)
 
-            speaker_id, bbox = estimate_speaker(faces, audio_path)
-
+            speaker_id, bbox = estimate_speaker(faces, image,  cleaned_audio_path)
+            os.remove(audio_path)
             # Draw bbox
             annotated_image = draw_bounding_boxes_on_image(image.copy(), [bbox], speaker_id)
             image_base64 = encode_image_to_base64(annotated_image)
@@ -92,8 +86,6 @@ async def handle_connection(websocket):
                 "image": image_base64
             })
 
-            # jsonDumps = json.dump({"name": "dauda oziegbe"})
-            # print(json_dumps)
             await websocket.send(json_dumps)
     except websockets.exceptions.ConnectionClosed:
         print("🔌 Client disconnected")

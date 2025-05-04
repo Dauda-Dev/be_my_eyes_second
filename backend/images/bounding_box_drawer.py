@@ -11,9 +11,9 @@ def draw_bounding_boxes_on_image(image: np.ndarray, faces: list, speaker_id: str
         x1, y1, x2, y2 = map(int, bbox)
         color = (0, 255, 0)  # Green box
         print('drawing bbox.........')
-        cv2.rectangle(image, (x1, y1), (x2, y2), color, 2)
+        cv2.rectangle(image, (x1, y1), (x2, y2), color, 4)
         cv2.putText(image, f"Speaker {speaker_id}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX,
-                    0.6, color, 2)
+                    0.8, color, 4)
     return image
 
 def encode_image_to_base64(image: np.ndarray):

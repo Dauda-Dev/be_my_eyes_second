@@ -37,7 +37,10 @@ def detect_faces(image):
 
 
 def estimate_distance(face_box):
-    _, _, w, h = face_box
+    x1, y1, x2, y2 = face_box
+    w = x2 - x1
+    h = y2 - y1
+
     face_size = (w + h) / 2
-    reference_size = 150
+    reference_size = 130
     return max(1.0, reference_size / face_size)

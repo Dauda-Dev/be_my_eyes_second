@@ -30,3 +30,5 @@ groq
 dotenv
 mediapipe
 opencv-python
+pydub
+ffmpeg-python
