@@ -5,7 +5,7 @@
 //import TranscriptionBox from './components/TranscriptionBox';
 //import { connectWebSocket } from './utils/websocket';
 //import { connectMockWebSocket } from './utils/mockWebSocket';
-//import { requestPermissions } from './utils/permissions';
+// import { requestPermissions } from './utils/permissions';
 //
 //export default function App() {
 //  const [bboxes, setBboxes] = useState([]); // array of { speaker_id, bbox: [x1, y1, x2, y2] }
@@ -63,6 +63,7 @@ import { connectWebSocket } from './utils/websocket';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import TranscriptionFeed from './components/TranscriptionFeed';
 import LanguageSelectorModal from './components/LanguageSelectorModal';
+import { requestPermissions } from './utils/permissions';
 
 export default function App() {
   const [bboxes, setBboxes] = useState<any[]>([]);
@@ -86,6 +87,11 @@ export default function App() {
 
 
   useEffect(() => {
+
+     (async () => {
+        const granted = await requestPermissions();
+        if (!granted) alert('Camera and mic required');
+     })();
     connectWebSocket((data) => {
       setMessageReceived(true);
 

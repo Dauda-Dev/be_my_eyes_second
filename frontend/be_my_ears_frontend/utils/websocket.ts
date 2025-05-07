@@ -1,4 +1,4 @@
-const WEBSOCKET_URL = 'ws://192.168.190.49:8765'; // Replace with your IP or server
+const WEBSOCKET_URL = 'wss://home.vsionai.store'; // Replace with your IP or server
 
 let websocket: WebSocket | null = null;
 let isConnected = false;

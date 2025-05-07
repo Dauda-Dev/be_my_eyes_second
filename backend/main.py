@@ -16,6 +16,11 @@ from backend.images.bounding_box_drawer import encode_image_to_base64, draw_boun
 from backend.errorHandler.error import volume_error
 from backend.audio.clean_audio import clean_audio
 
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
 
 async def handle_connection(websocket):
     print("🔗 Client connected")
