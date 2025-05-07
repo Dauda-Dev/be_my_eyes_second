@@ -1,0 +1,23 @@
+# Python cache
+__pycache__/
+*/__pycache__/
+
+# Python virtual environments
+venv/
+env/
+
+# Environment variables
+.env
+
+# Pytest cache
+.pytest_cache/
+
+# VS Code settings (optional)
+.vscode/
+
+# Mac OS metadata (optional)
+.DS_Store
+
+# SQLite or other local DB files (if any)
+*.sqlite3
+*.db

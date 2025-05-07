@@ -92,8 +92,8 @@ async def handle_connection(websocket):
 
 
 async def main():
-    async with websockets.serve(handle_connection, "0.0.0.0", 8765, max_size=16_000_000):
-        print("🚀 WebSocket server running on ws://0.0.0.0:8765")
+    async with websockets.serve(handle_connection, "0.0.0.0", 8000, max_size=16_000_000):
+        print("🚀 WebSocket server running on ws://0.0.0.0:8000")
         await asyncio.Future()
 
 
