@@ -1,13 +1,13 @@
 import asyncio
 import json
 import os
+import sys
+from urllib.parse import urlparse, parse_qs
 
 import websockets
 from backend.decode.decoder import decode_image, decode_audio
 from backend.images.face_detection import detect_faces
-# from backend.model.transcriber import transcribe
 from backend.audio.speaker_estimation import estimate_speaker
-# from backend.model.yoruba_transcriber import transcribe_and_translate
 from backend.model.groq.groq_transcriber import transcribe_audio
 from backend.model.groq.translator import translate_text
 from backend.audio.volume_check import get_audio_volume, check_volume_threshold
@@ -16,18 +16,41 @@ from backend.images.bounding_box_drawer import encode_image_to_base64, draw_boun
 from backend.errorHandler.error import volume_error
 from backend.audio.clean_audio import clean_audio
 
-import sys
-
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+connected_clients = {}
+
+
+LANGUAGES = {
+    "en": "English",
+    "yo": "Yoruba",
+    "fr": "French",
+    "es": "Spanish",
+    "ig": "Igbo",
+    "ha": "Hausa"
+}
+
 
 
 
 async def handle_connection(websocket):
-    print("🔗 Client connected")
+    # Extract client_id from the websocket request URI
+    query = parse_qs(urlparse(websocket.request.path).query)
+    client_id = query.get('client_id', [None])[0]
+
+    if client_id is None:
+        print("❌ client_id missing")
+        await websocket.close()
+        return
+
+    connected_clients[client_id] = websocket
+    print(f"🔗 Client connected: {client_id}")
+
     try:
         async for message in websocket:
             data = json.loads(message)
-            print(data["timestamp"])
+            print(f"📩 Message received from {client_id}: {data.get('timestamp')}")
+
             if data.get("type") != "audio_video":
                 continue
 
@@ -47,53 +70,49 @@ async def handle_connection(websocket):
                 frame_dim = [image_height, image_width]
 
             # Step 1️⃣: Check audio volume
-
             volume = get_audio_volume(audio_path)
             print(f"🔊 Volume: {volume:.5f}")
-            if check_volume_threshold(volume) is False:
+            if not check_volume_threshold(volume):
                 print("⚠️ Audio too quiet — skipping transcription")
                 await websocket.send(json.dumps(volume_error))
                 continue
 
             cleaned_audio_path = clean_audio(audio_path)
-            print(f'cleaned audio output')
             faces = detect_faces(image)
 
-            # if faces is None or len(faces) == 0:
-            #     # await websocket.send(json.dumps({"error": "No faces detected"}))
-            #     continue
-
-            # transcription = transcribe(audio_path)
-
-            # transcription, translation = transcribe_and_translate(audio_path)
             transcription = await transcribe_audio(cleaned_audio_path, transcribe_language)
-
-            print(f'{transcription} ')
             if not is_valid_transcription(transcription):
                 print("⚠️ Ignoring low-quality transcription")
-                return  # or continue
+                continue
 
-            translation = await translate_text(transcription, translate_language)
+            translation = await translate_text(transcription, LANGUAGES[transcribe_language], translate_language)
+            if translation == 'incoherent':
+                print('the txt is not coherent')
+                continue
 
-            speaker_id, bbox = estimate_speaker(faces, image,  cleaned_audio_path)
+            speaker_id, bbox = estimate_speaker(faces, image, cleaned_audio_path)
             os.remove(audio_path)
+
             # Draw bbox
             annotated_image = draw_bounding_boxes_on_image(image.copy(), [bbox], speaker_id)
             image_base64 = encode_image_to_base64(annotated_image)
 
-            json_dumps = json.dumps({
+            result = {
                 "bboxes": [{"bbox": bbox, "speaker_id": str(speaker_id), "frame_dim": frame_dim}],
-                "transcription": {  # ✅ Correct spelling here!
+                "transcription": {
                     "speaker_id": str(speaker_id),
                     "text": transcription,
                     "translation": translation
                 },
                 "image": image_base64
-            })
+            }
 
-            await websocket.send(json_dumps)
+            await websocket.send(json.dumps(result))
+
     except websockets.exceptions.ConnectionClosed:
-        print("🔌 Client disconnected")
+        print(f"🔌 Client disconnected: {client_id}")
+    finally:
+        connected_clients.pop(client_id, None)
 
 
 async def main():

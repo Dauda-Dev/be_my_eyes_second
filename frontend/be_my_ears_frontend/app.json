@@ -19,7 +19,12 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.dauda933.whisperspeakerapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -33,6 +38,11 @@
           "recordAudioAndroid": true
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a86cfbd8-61c6-41cb-95c4-e9dc7fca67f2"
+      }
+    }
   }
 }
