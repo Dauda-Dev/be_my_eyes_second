@@ -116,7 +116,7 @@ async def handle_connection(websocket):
 
 
 async def main():
-    async with websockets.serve(handle_connection, "0.0.0.0", 8000, max_size=16_000_000, ping_interval=30, ping_timeout=60):
+    async with websockets.serve(handle_connection, "0.0.0.0", 8000, max_size=16_000_000, ping_interval=20, ping_timeout=100):
         print("🚀 WebSocket server running on ws://0.0.0.0:8000")
         await asyncio.Future()
 
