@@ -34,7 +34,7 @@ export default function CameraFeed({
   }, [transcribeLang, translateLang]);
 
   useEffect(() => {
-    const interval = setInterval(() => captureAndSend(), 25000);
+    const interval = setInterval(() => captureAndSend(), 17000);
     return () => clearInterval(interval);
   }, []);
 
@@ -70,7 +70,7 @@ export default function CameraFeed({
 
         await recording.startAsync();
         console.log('recording.......')
-        await new Promise((res) => setTimeout(res, 20000));
+        await new Promise((res) => setTimeout(res, 15000));
         await recording.stopAndUnloadAsync();
         console.log('done.......')
 

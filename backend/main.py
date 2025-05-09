@@ -66,7 +66,7 @@ async def process_message(websocket, client_id, message):
             return
 
         timestamp = data["timestamp"]
-        image = decode_image(data["image"])
+        # image = decode_image(data["image"])
         audio_path = decode_audio(data["audio"])
         print(audio_path)
 
@@ -76,7 +76,7 @@ async def process_message(websocket, client_id, message):
         image_width = data.get("image_width")
         image_height = data.get("image_height")
 
-        frame_dim = [image.shape[0], image.shape[1]]
+        # frame_dim = [image.shape[0], image.shape[1]]
         if image_width and image_height:
             frame_dim = [image_height, image_width]
 
@@ -89,33 +89,35 @@ async def process_message(websocket, client_id, message):
             return
 
         cleaned_audio_path = clean_audio(audio_path)
-        faces = detect_faces(image)
+        # faces = detect_faces(image)
 
         transcription = await transcribe_audio(cleaned_audio_path, transcribe_language)
+        print(f'transcription: {transcription}')
         if not is_valid_transcription(transcription):
             print("⚠️ Ignoring low-quality transcription")
             return
 
         translation = await translate_text(transcription, LANGUAGES[transcribe_language], translate_language)
+        print(f'translation: {translation}')
         if translation == 'incoherent':
             print('the txt is not coherent')
             return
 
-        speaker_id, bbox = estimate_speaker(faces, image, cleaned_audio_path)
+        # speaker_id, bbox = estimate_speaker(faces, image, cleaned_audio_path)
         os.remove(audio_path)
 
         # Draw bbox
-        annotated_image = draw_bounding_boxes_on_image(image.copy(), [bbox], speaker_id)
-        image_base64 = encode_image_to_base64(annotated_image)
+        # annotated_image = draw_bounding_boxes_on_image(image.copy(), [bbox], speaker_id)
+        # image_base64 = encode_image_to_base64(annotated_image)
 
         result = {
-            "bboxes": [{"bbox": bbox, "speaker_id": str(speaker_id), "frame_dim": frame_dim}],
+            # "bboxes": [{"bbox": bbox, "speaker_id": str(speaker_id), "frame_dim": frame_dim}],
             "transcription": {
-                "speaker_id": str(speaker_id),
+                # "speaker_id": str(speaker_id),
                 "text": transcription,
                 "translation": translation
             },
-            "image": image_base64
+            # "image": image_base64
         }
 
         await websocket.send(json.dumps(result))
