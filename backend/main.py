@@ -3,6 +3,7 @@ import json
 import os
 import sys
 from urllib.parse import urlparse, parse_qs
+import uuid
 
 import websockets
 from backend.decode.decoder import decode_image, decode_audio
@@ -15,6 +16,7 @@ from backend.audio.volume_check import is_valid_transcription
 from backend.images.bounding_box_drawer import encode_image_to_base64, draw_bounding_boxes_on_image
 from backend.errorHandler.error import volume_error
 from backend.audio.clean_audio import clean_audio
+from backend.database.db import save_message,get_unacknowledged_messages, acknowledge_message
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -31,10 +33,22 @@ LANGUAGES = {
 }
 
 
+async def resend_unacknowledged(websocket, client_id):
+    while True:
+        await asyncio.sleep(60)  # every 1 minute
+        messages = await get_unacknowledged_messages()
+        for row in messages:
+            try:
+                await websocket.send(json.dumps(row["message"]))
+                print(f"🔁 Retried message for {client_id}")
+            except:
+                pass  # client may be disconnected
+
 
 
 async def handle_connection(websocket):
     # Extract client_id from the websocket request URI
+
     query = parse_qs(urlparse(websocket.request.path).query)
     client_id = query.get('client_id', [None])[0]
 
@@ -45,6 +59,8 @@ async def handle_connection(websocket):
 
     connected_clients[client_id] = websocket
     print(f"🔗 Client connected: {client_id}")
+
+    asyncio.create_task(resend_unacknowledged(websocket, client_id))
 
     try:
         async for message in websocket:
@@ -61,6 +77,13 @@ async def process_message(websocket, client_id, message):
     try:
         data = json.loads(message)
         print(f"📩 Message received from {client_id}: {data.get('timestamp')}")
+
+        if data.get("type") == "ack":
+            message_id = data.get("id")
+            if message_id:
+                await acknowledge_message(client_id, message_id)
+                print(f"✅ Acknowledgment received for message ID {message_id}")
+            return
 
         if data.get("type") != "audio_video":
             return
@@ -109,16 +132,22 @@ async def process_message(websocket, client_id, message):
         # Draw bbox
         annotated_image = draw_bounding_boxes_on_image(image.copy(), [bbox], speaker_id)
         image_base64 = encode_image_to_base64(annotated_image)
+        message_id = str(uuid.uuid4())
 
         result = {
+            "id": message_id,
             "bboxes": [{"bbox": bbox, "speaker_id": str(speaker_id), "frame_dim": frame_dim}],
             "transcription": {
                 "speaker_id": str(speaker_id),
                 "text": transcription,
                 "translation": translation
             },
-            "image": image_base64
+            "image": image_base64,
+            "timestamp": timestamp,
+            "type": "response"
         }
+
+        await save_message(client_id, result, message_id)
 
         await websocket.send(json.dumps(result))
 

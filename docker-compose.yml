@@ -1,0 +1,24 @@
+services:
+  db:
+    image: postgres:15
+    container_name: be_my_eyes_db
+    restart: always
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: bme_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  flyway:
+    image: flyway/flyway:latest
+    depends_on:
+      - db
+    volumes:
+      - ./migrations:/flyway/sql
+    command: -url=jdbc:postgresql://db:5432/bme_db -user=myuser -password=mypassword migrate
+
+volumes:
+  postgres_data:

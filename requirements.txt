@@ -32,3 +32,4 @@ mediapipe
 opencv-python
 pydub
 ffmpeg-python
+asyncpg
