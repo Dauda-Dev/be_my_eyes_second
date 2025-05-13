@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: mypassword
       POSTGRES_DB: bme_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -18,7 +18,7 @@ services:
       - db
     volumes:
       - ./migrations:/flyway/sql
-    command: -url=jdbc:postgresql://db:5432/bme_db -user=myuser -password=mypassword migrate
+    command: -url=jdbc:postgresql://db:5433/bme_db -user=myuser -password=mypassword migrate
 
 volumes:
   postgres_data:
