@@ -18,7 +18,8 @@ services:
       - db
     volumes:
       - ./migrations:/flyway/sql
-    command: -url=jdbc:postgresql://db:5433/bme_db -user=myuser -password=mypassword migrate
+    command: -url=jdbc:postgresql://db:5432/bme_db -user=myuser -password=mypassword migrate
+
 
 volumes:
   postgres_data:
