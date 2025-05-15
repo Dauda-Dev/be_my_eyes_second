@@ -34,12 +34,13 @@ LANGUAGES = {
 
 
 async def resend_unacknowledged(websocket, client_id):
+    print('initiating resend of unacknowledged tasks')
     while True:
-        await asyncio.sleep(60)  # every 1 minute
-        messages = await get_unacknowledged_messages()
+        await asyncio.sleep(30)  # every 1 minute
+        messages = await get_unacknowledged_messages(client_id)
         for row in messages:
             try:
-                await websocket.send(json.dumps(row["message"]))
+                await websocket.send(row["message"])
                 print(f"🔁 Retried message for {client_id}")
             except:
                 pass  # client may be disconnected
@@ -60,7 +61,8 @@ async def handle_connection(websocket):
     connected_clients[client_id] = websocket
     print(f"🔗 Client connected: {client_id}")
 
-    asyncio.create_task(resend_unacknowledged(websocket, client_id))
+    asyncio.create_task(
+    resend_unacknowledged(websocket, client_id))
 
     try:
         async for message in websocket:
@@ -79,8 +81,9 @@ async def process_message(websocket, client_id, message):
         print(f"📩 Message received from {client_id}: {data.get('timestamp')}")
 
         if data.get("type") == "ack":
-            message_id = data.get("id")
+            message_id = data.get("message_id")
             if message_id:
+                print(f'recieved acknowledgment message {message_id}')
                 await acknowledge_message(client_id, message_id)
                 print(f"✅ Acknowledgment received for message ID {message_id}")
             return
@@ -135,7 +138,7 @@ async def process_message(websocket, client_id, message):
         message_id = str(uuid.uuid4())
 
         result = {
-            "id": message_id,
+            "message_id": message_id,
             "bboxes": [{"bbox": bbox, "speaker_id": str(speaker_id), "frame_dim": frame_dim}],
             "transcription": {
                 "speaker_id": str(speaker_id),
@@ -147,7 +150,7 @@ async def process_message(websocket, client_id, message):
             "type": "response"
         }
 
-        await save_message(client_id, result, message_id)
+        await save_message(client_id, json.dumps(result), message_id)
 
         await websocket.send(json.dumps(result))
 

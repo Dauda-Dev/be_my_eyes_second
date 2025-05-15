@@ -1,8 +1,8 @@
 import getClientId from './getClientId';
 
 
-const WEBSOCKET_BASE_URL = 'wss://home.vsionai.store'; // Replace with your IP or server
-// const WEBSOCKET_BASE_URL = 'ws://192.168.114.215:8000';
+// const WEBSOCKET_BASE_URL = 'wss://home.vsionai.store'; // Replace with your IP or server
+const WEBSOCKET_BASE_URL = 'ws://192.168.213.215:8000';
 
 let websocket: WebSocket | null = null;
 let isConnected = false;
@@ -26,6 +26,8 @@ type WebSocketMessage = {
   };
   image: string;
   bboxes: BBox[];
+  type: string;
+  message_id: string;
 };
 // Connect and handle WebSocket
 export const connectWebSocket = async (onMessage: (data: WebSocketMessage) => void) => {
@@ -57,6 +59,15 @@ export const connectWebSocket = async (onMessage: (data: WebSocketMessage) => vo
         console.warn("⚠️ No transcription found!");
       }
 
+      if(df.message_id){
+          console.log('Acknowledging message receipt ', df.message_id)
+          sendAcknowledgement({
+              type: "ack",
+              message_id: df.message_id,
+              timestamp: df.timestamp
+              })
+
+          }
       if (onMessageCallback) {
         onMessageCallback(df);
       }
@@ -89,6 +100,20 @@ export const sendAudioVideo = (payload: any) => {
     try {
       websocket.send(JSON.stringify(payload));
       console.log('📤 Sent audio/video payload');
+    } catch (e) {
+      console.error('❌ Failed to send WebSocket message:', e);
+    }
+  } else {
+    console.warn('⚠️ Cannot send, WebSocket not connected or not ready');
+  }
+};
+
+
+export const sendAcknowledgement = (payload: any) => {
+  if (isConnected && websocket && websocket.readyState === WebSocket.OPEN) {
+    try {
+      websocket.send(JSON.stringify(payload));
+      console.log('📤 Sent ack payload');
     } catch (e) {
       console.error('❌ Failed to send WebSocket message:', e);
     }

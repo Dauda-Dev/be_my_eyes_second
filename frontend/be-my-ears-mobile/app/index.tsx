@@ -72,6 +72,7 @@ return (
         onClose={() => setModalVisible(false)}
         onSelect={handleLanguageSelect}
       />
+    <View style={styles.cameraContainer}>
     <CameraFeed
       transcribeLang = {transcribeLang}
       translateLang = {translateLang}
@@ -81,7 +82,9 @@ return (
       onSending={() => setIsSending(true)}
       onSent={() => setIsSending(false)}
     />
-     <Button title="Select Languages" onPress={() => setModalVisible(true)} />
+    </View>
+     
+    <Button title="Select Languages" onPress={() => setModalVisible(true)} />
     <View style={styles.transcriptionContainer}>
         <TranscriptionFeed
           entries={transcriptions}
@@ -103,7 +106,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   transcriptionContainer: {
-    flex: 2, // Increase this to give it more vertical space
+    flex: 6, // Increase this to give it more vertical space
   },
+  cameraContainer: {
+    flex: 1.5
+  }
 });
 

@@ -16,5 +16,11 @@ def clean_audio(input_path: str) -> str:
         cleaned_temp.name
     ]
 
-    subprocess.run(command, check=True)
+    # subprocess.run(command, check=True)
+    subprocess.run(
+        command,
+        check=True,
+        stdout=subprocess.DEVNULL,  # Suppress normal output
+        stderr=subprocess.DEVNULL  # Suppress error/info output
+    )
     return cleaned_temp.name

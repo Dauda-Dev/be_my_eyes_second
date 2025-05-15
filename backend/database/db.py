@@ -7,6 +7,7 @@ async def get_connection():
     return await asyncpg.connect(DB_URL)
 
 async def save_message(client_id, message_dict, message_id):
+    print('saving info')
     conn = await get_connection()
     try:
         await conn.execute(
@@ -19,18 +20,21 @@ async def save_message(client_id, message_dict, message_id):
         await conn.close()
 
 
-async def get_unacknowledged_messages():
+async def get_unacknowledged_messages(client_id):
     conn = await get_connection()
     try:
         return await conn.fetch(
             """
             SELECT message FROM messages
             WHERE acknowledged = FALSE
+              AND client_id = $1
               AND created_at > NOW() - INTERVAL '1 hour'
-            """
+            """,
+            client_id
         )
     finally:
         await conn.close()
+
 
 
 async def acknowledge_message(client_id: str, message_id: str):
@@ -40,7 +44,7 @@ async def acknowledge_message(client_id: str, message_id: str):
             """
             UPDATE messages
             SET acknowledged = TRUE
-            WHERE id = $1 AND client_id = $2
+            WHERE message_id = $1 AND client_id = $2
             """,
             message_id, client_id
         )
