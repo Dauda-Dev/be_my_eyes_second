@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { CameraView, useCameraPermissions, CameraType } from 'expo-camera';
 import { Audio } from 'expo-av';
-import { View, ActivityIndicator, StyleSheet, Button, Text, TouchableOpacity } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Button, Text, TouchableOpacity, Slider,  Dimensions } from 'react-native';
 import { sendAudioVideo } from '../utils/websocket';
 
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 export default function CameraFeed({
   transcribeLang,
   translateLang,
@@ -18,96 +20,108 @@ export default function CameraFeed({
   onRecordingStop: () => void;
   onSending: () => void;
   onSent: () => void;
-
-    }) {
+}) {
   const cameraRef = useRef<any>(null);
   const [facing, setFacing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
-
+  const [isRecording, setIsRecording] = useState(false);
+  const [volumeLevel, setVolumeLevel] = useState(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [isBuffering, setIsBuffering] = useState(false);
   const transcribeLangRef = useRef(transcribeLang);
   const translateLangRef = useRef(translateLang);
-
 
   useEffect(() => {
     transcribeLangRef.current = transcribeLang;
     translateLangRef.current = translateLang;
   }, [transcribeLang, translateLang]);
 
-  useEffect(() => {
-    const interval = setInterval(() => captureAndSend(), 17000);
-    return () => clearInterval(interval);
-  }, []);
+  const startCaptureLoop = () => {
+    if (intervalRef.current) return;
+    setIsBuffering(true)
+    intervalRef.current = setInterval(() => captureAndSend(), 17000);
+  };
 
-
+  const stopCaptureLoop = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
 
   const captureAndSend = async () => {
-    if (!cameraRef.current) return;
+    // if (!cameraRef.current) return;
 
-    try{
-        console.log('pef.......', transcribeLangRef.current, translateLangRef.current)
-        onRecordingStart();
+    try {
+      setIsBuffering(false);
+      onRecordingStart();
+      setIsRecording(true);
 
+      const recording = new Audio.Recording();
+      await recording.prepareToRecordAsync({
+        android: {
+          extension: '.aac',
+          outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_AAC_ADTS,
+          audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_AAC,
+          sampleRate: 16000,
+          numberOfChannels: 1,
+          bitRate: 128000,
+        },
+        ios: {
+          extension: '.aac',
+          outputFormat: Audio.RECORDING_OPTION_IOS_OUTPUT_FORMAT_MPEG4AAC,
+          audioQuality: Audio.RECORDING_OPTION_IOS_AUDIO_QUALITY_HIGH,
+          sampleRate: 16000,
+          numberOfChannels: 1,
+          bitRate: 128000,
+        },
+        isMeteringEnabled: true
+      });
 
-        const recording = new Audio.Recording();
-        await recording.prepareToRecordAsync({
-          android: {
-            extension: '.aac',
-            outputFormat: Audio.RECORDING_OPTION_ANDROID_OUTPUT_FORMAT_AAC_ADTS,
-            audioEncoder: Audio.RECORDING_OPTION_ANDROID_AUDIO_ENCODER_AAC,
-            sampleRate: 16000,
-            numberOfChannels: 1,
-            bitRate: 128000,
-          },
-          ios: {
-            extension: '.aac',
-            outputFormat: Audio.RECORDING_OPTION_IOS_OUTPUT_FORMAT_MPEG4AAC,
-            audioQuality: Audio.RECORDING_OPTION_IOS_AUDIO_QUALITY_HIGH,
-            sampleRate: 16000,
-            numberOfChannels: 1,
-            bitRate: 128000,
-          },
-        });
+      await recording.startAsync();
 
-        await recording.startAsync();
-        console.log('recording.......')
-        await new Promise((res) => setTimeout(res, 15000));
-        await recording.stopAndUnloadAsync();
-        console.log('done.......')
+      const monitorVolume = setInterval(async () => {
+        const status = await recording.getStatusAsync();
+        if (status.metering) {
+          setVolumeLevel(status.metering);
+        }
+      }, 500);
 
-        onRecordingStop();
+      await new Promise((res) => setTimeout(res, 15000));
+      clearInterval(monitorVolume);
 
-        const photo = await cameraRef.current.takePictureAsync({
-          base64: true,
-          quality: 0.1,
-          skipProcessing: true,
-        });
+      await recording.stopAndUnloadAsync();
+      setIsRecording(false);
+      onRecordingStop();
 
+      // const photo = await cameraRef.current.takePictureAsync({
+      //   base64: true,
+      //   quality: 0.1,
+      //   skipProcessing: true,
+      // });
 
-        const audioUri = recording.getURI();
-        const audioBase64 = await fileToBase64(audioUri);
+      const audioUri = recording.getURI();
+      const audioBase64 = await fileToBase64(audioUri);
 
-        onSending();
-
-        console.log('sending.......')
-        sendAudioVideo({
-          type: 'audio_video',
-          timestamp: Date.now() / 1000,
-          image: photo.base64,
-          audio: audioBase64,
-          image_width: photo.width,
-          image_height: photo.height,
-          transcribe_lang: transcribeLangRef.current,   // ✅ Use ref
-          translate_lang: translateLangRef.current
-        });
-
-        onSent();
-
-    }catch(err){
-        console.error('Capture/send error:', err);
-    onRecordingStop();
-    onSent();
+      onSending();
+      sendAudioVideo({
+        type: 'audio_video',
+        timestamp: Date.now() / 1000,
+        // image: photo.base64,
+        audio: audioBase64,
+        // image_width: photo.width,
+        // image_height: photo.height,
+        transcribe_lang: transcribeLangRef.current,
+        translate_lang: translateLangRef.current
+      });
+      onSent();
+    } catch (err) {
+      console.error('Capture/send error:', err);
+      setIsRecording(false);
+      onRecordingStop();
+      // setIsBuffering(false);
+      onSent();
     }
-
   };
 
   const fileToBase64 = async (uri: string) => {
@@ -121,7 +135,7 @@ export default function CameraFeed({
     });
   };
 
-   function toggleCameraFacing() {
+  function toggleCameraFacing() {
     setFacing(current => (current === 'back' ? 'front' : 'back'));
   }
 
@@ -137,13 +151,35 @@ export default function CameraFeed({
   }
 
   return (
-    <CameraView style={styles.camera} ref={cameraRef} facing={facing} >
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
-            <Text style={styles.text}>Flip Camera</Text>
-          </TouchableOpacity>
+    <View style={styles.camera}>
+     {/* <CameraView style={styles.camera} ref={cameraRef} facing={facing}> */}
+      <View style={styles.buttonContainer}>
+        {/* <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
+          <Text style={styles.text}>Flip Camera</Text>
+        </TouchableOpacity> */}
+        <TouchableOpacity
+          style={[styles.button, isRecording ? styles.buttonStop : styles.buttonStart]}
+          onPress={() => (isRecording ? stopCaptureLoop() : startCaptureLoop())}
+        >
+          {isBuffering ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.text}>
+              {isRecording ? 'Stop' : 'Start'} Recording
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+      {isRecording && (
+        <View style={styles.volumeMeterContainer}>
+          <Text style={styles.text}>Mic Volume:</Text>
+          <View style={styles.volumeBarWrapper}>
+            <View style={[styles.volumeBar, { width: `${volumeLevel + 100}%` }]} />
+          </View>
         </View>
-    </CameraView>
+      )}
+    {/* </CameraView> */}
+    </View>
   );
 }
 
@@ -162,5 +198,43 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#ddd',
     textAlign: 'center',
+  },
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 20,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  button: {
+    padding: 10,
+    backgroundColor: '#444',
+    borderRadius: 8,
+  },
+  buttonStart: {
+    backgroundColor: 'green',
+  },
+  buttonStop: {
+    backgroundColor: 'red',
+  },
+  text: {
+    color: '#fff',
+  },
+  volumeMeterContainer: {
+    position: 'absolute',
+    top: 10,
+    width: '100%',
+    paddingHorizontal: 20,
+  },
+  volumeBarWrapper: {
+    backgroundColor: '#333',
+    height: 5,
+    borderRadius: 5,
+    overflow: 'hidden',
+    marginTop: 4,
+  },
+  volumeBar: {
+    backgroundColor: '#0f2',
+    height: '100%',
   },
 });

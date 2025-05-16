@@ -18,7 +18,12 @@ export default function Index() {
   const [modalVisible, setModalVisible] = useState(false);
   const [transcribeLang, setTranscribeLang] = useState('en');
   const [translateLang, setTranslateLang] = useState('English');
+  const [recordingEnabled, setRecordingEnabled] = useState(false);
 
+  const toggleRecording = () => {
+    setRecordingEnabled((prev) => !prev);
+  };
+  
   const handleLanguageSelect = (transcribe: string, translate: string) => {
     console.log("selected languages: ", transcribe, translate)
     setTranscribeLang(transcribe);
@@ -73,6 +78,7 @@ return (
         onSelect={handleLanguageSelect}
       />
     <View style={styles.cameraContainer}>
+      
     <CameraFeed
       transcribeLang = {transcribeLang}
       translateLang = {translateLang}
@@ -81,10 +87,12 @@ return (
       onRecordingStop={() => setIsRecording(false)}
       onSending={() => setIsSending(true)}
       onSent={() => setIsSending(false)}
+     
     />
     </View>
      
     <Button title="Select Languages" onPress={() => setModalVisible(true)} />
+    
     <View style={styles.transcriptionContainer}>
         <TranscriptionFeed
           entries={transcriptions}
@@ -93,6 +101,8 @@ return (
           received={messageReceived}
         />
     </View>
+ 
+
   </View>
 );
 
@@ -109,7 +119,7 @@ const styles = StyleSheet.create({
     flex: 6, // Increase this to give it more vertical space
   },
   cameraContainer: {
-    flex: 1.5
+    flex: 1
   }
 });
 

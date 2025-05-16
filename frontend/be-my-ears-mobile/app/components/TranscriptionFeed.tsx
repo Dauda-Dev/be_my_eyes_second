@@ -23,9 +23,9 @@ export default function TranscriptionFeed({ entries, recording, sending, receive
 
   const renderItem = ({ item }: { item: TranscriptionEntry }) => (
     <View style={styles.item}>
-      <Text style={styles.speaker}>🎤 Speaker: {item.speaker_id}</Text>
-      <Text style={styles.text}>📝 {item.text}</Text>
-      <Text style={styles.translation}>🌍 {item.translation}</Text>
+      {/* <Text style={styles.speaker}>🎤 Speaker: {item.speaker_id}</Text> */}
+      <Text style={styles.translation}> 📝:  {item.text}</Text>
+      <Text style={styles.text}> 🌍:  {item.translation}</Text>
       <Text style={styles.time}>🕐 {new Date(item.timestamp * 1000).toLocaleTimeString()}</Text>
       {item.image && (
         <TouchableOpacity onPress={() => setModalImage(item.image)}>
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
   },
   speaker: { fontSize: 14, color: '#ffd700', fontWeight: 'bold' },
   text: { fontSize: 14, color: '#fff', marginTop: 4 },
-  translation: { fontSize: 14, color: '#aaa', marginTop: 4 },
+  translation: { fontSize: 14, color: '#ffd700', marginTop: 4 },
   time: { fontSize: 12, color: '#888', marginTop: 4 },
   viewImage: {
     marginTop: 8,

@@ -92,19 +92,19 @@ async def process_message(websocket, client_id, message):
             return
 
         timestamp = data["timestamp"]
-        image = decode_image(data["image"])
+        # image = decode_image(data["image"])
         audio_path = decode_audio(data["audio"])
         print(audio_path)
 
         transcribe_language = data["transcribe_lang"]
         translate_language = data["translate_lang"]
 
-        image_width = data.get("image_width")
-        image_height = data.get("image_height")
+        # image_width = data.get("image_width")
+        # image_height = data.get("image_height")
 
-        frame_dim = [image.shape[0], image.shape[1]]
-        if image_width and image_height:
-            frame_dim = [image_height, image_width]
+        # frame_dim = [image.shape[0], image.shape[1]]
+        # if image_width and image_height:
+        #     frame_dim = [image_height, image_width]
 
         # Step 1️⃣: Check audio volume
         volume = get_audio_volume(audio_path)
@@ -115,7 +115,7 @@ async def process_message(websocket, client_id, message):
             return
 
         cleaned_audio_path = clean_audio(audio_path)
-        faces = detect_faces(image)
+        # faces = detect_faces(image)
 
         transcription = await transcribe_audio(cleaned_audio_path, transcribe_language)
         print(f'transcription: {transcription}')
@@ -129,23 +129,23 @@ async def process_message(websocket, client_id, message):
             print('the txt is not coherent')
             return
 
-        speaker_id, bbox = estimate_speaker(faces, image, cleaned_audio_path)
+        # speaker_id, bbox = estimate_speaker(faces, image, cleaned_audio_path)
         os.remove(audio_path)
 
         # Draw bbox
-        annotated_image = draw_bounding_boxes_on_image(image.copy(), [bbox], speaker_id)
-        image_base64 = encode_image_to_base64(annotated_image)
+        # annotated_image = draw_bounding_boxes_on_image(image.copy(), [bbox], speaker_id)
+        # image_base64 = encode_image_to_base64(annotated_image)
         message_id = str(uuid.uuid4())
 
         result = {
             "message_id": message_id,
-            "bboxes": [{"bbox": bbox, "speaker_id": str(speaker_id), "frame_dim": frame_dim}],
+            # "bboxes": [{"bbox": bbox, "speaker_id": str(speaker_id), "frame_dim": frame_dim}],
             "transcription": {
-                "speaker_id": str(speaker_id),
+                # "speaker_id": str(speaker_id),
                 "text": transcription,
                 "translation": translation
             },
-            "image": image_base64,
+            # "image": image_base64,
             "timestamp": timestamp,
             "type": "response"
         }
