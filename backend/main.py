@@ -82,6 +82,7 @@ async def process_message(websocket, client_id, message):
 
         if data.get("type") == "ack":
             message_id = data.get("message_id")
+            print("message_id: ", message_id)
             if message_id:
                 print(f'recieved acknowledgment message {message_id}')
                 await acknowledge_message(client_id, message_id)
@@ -92,6 +93,7 @@ async def process_message(websocket, client_id, message):
             return
 
         timestamp = data["timestamp"]
+        message_id = data["message_id"]
         # image = decode_image(data["image"])
         audio_path = decode_audio(data["audio"])
         print(audio_path)
@@ -137,7 +139,7 @@ async def process_message(websocket, client_id, message):
         # Draw bbox
         # annotated_image = draw_bounding_boxes_on_image(image.copy(), [bbox], speaker_id)
         # image_base64 = encode_image_to_base64(annotated_image)
-        message_id = str(uuid.uuid4())
+        # message_id = str(uuid.uuid4())
 
         result = {
             "message_id": message_id,

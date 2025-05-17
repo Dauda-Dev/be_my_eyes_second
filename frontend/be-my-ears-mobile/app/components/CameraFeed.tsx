@@ -3,6 +3,7 @@ import { CameraView, useCameraPermissions, CameraType } from 'expo-camera';
 import { Audio } from 'expo-av';
 import { View, ActivityIndicator, StyleSheet, Button, Text, TouchableOpacity, Slider,  Dimensions } from 'react-native';
 import { sendAudioVideo } from '../utils/websocket';
+import { generateMessageId } from '../utils/getClientId';
 
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -12,7 +13,8 @@ export default function CameraFeed({
   onRecordingStart,
   onRecordingStop,
   onSending,
-  onSent
+  onSent,
+  setPendingMessageId,
 }: {
   transcribeLang: string;
   translateLang: string;
@@ -20,6 +22,7 @@ export default function CameraFeed({
   onRecordingStop: () => void;
   onSending: () => void;
   onSent: () => void;
+  setPendingMessageId: (messageId: boolean) => void;
 }) {
   const cameraRef = useRef<any>(null);
   const [facing, setFacing] = useState<CameraType>('back');
@@ -51,6 +54,7 @@ export default function CameraFeed({
 
   const stopCaptureLoop = async () => {
     wasStoppedManuallyRef.current = true;
+    setPendingMessageId(false); 
 
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -144,8 +148,13 @@ export default function CameraFeed({
       const audioUri = recording.getURI();
       const audioBase64 = await fileToBase64(audioUri);
 
+      
+      const messageId = generateMessageId();
+      setPendingMessageId(true);
+
       onSending();
       sendAudioVideo({
+        message_id: messageId,
         type: 'audio_video',
         timestamp: Date.now() / 1000,
         // image: photo.base64,
@@ -154,6 +163,7 @@ export default function CameraFeed({
         // image_height: photo.height,
         transcribe_lang: transcribeLangRef.current,
         translate_lang: translateLangRef.current
+  
       });
       onSent();
 

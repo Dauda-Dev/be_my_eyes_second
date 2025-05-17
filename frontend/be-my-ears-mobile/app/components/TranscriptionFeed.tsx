@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity, Modal, Image
 } from 'react-native';
+import { TypingIndicator } from './TypingIndicator';
 
 type TranscriptionEntry = {
+  id: string;
   speaker_id: string;
   text: string;
   translation: string;
@@ -16,9 +18,10 @@ interface Props {
   recording: boolean;
   sending: boolean;
   received: boolean;
+  pendingMessage: boolean;
 }
 
-export default function TranscriptionFeed({ entries, recording, sending, received }: Props) {
+export default function TranscriptionFeed({ entries, recording, sending, received, pendingMessage }: Props) {
   const [modalImage, setModalImage] = useState<string | null>(null);
 
   const renderItem = ({ item }: { item: TranscriptionEntry }) => (
@@ -46,12 +49,23 @@ export default function TranscriptionFeed({ entries, recording, sending, receive
 
       {/* Feed List */}
       <FlatList
-        data={entries}
+        data={pendingMessage ? [...entries, {id: 'typing'}] : entries}
         keyExtractor={(_, i) => i.toString()}
-        renderItem={renderItem}
+        // renderItem={renderItem}
+        renderItem={({item}) => 
+        item.id ==='typing' ? ( <TypingIndicator />) : renderItem({item})
+      }
         contentContainerStyle={{ paddingBottom: 80 }}
+        
       />
 
+
+{/* {recording &&  (
+  <View style={styles.typingContainer}>
+    <Text style={styles.typingText}>Processing</Text>
+    <Text style={styles.ellipsis}>...</Text>
+  </View>
+)} */}
       {/* Image Modal */}
       <Modal visible={!!modalImage} transparent animationType="slide">
         <View style={styles.modalContainer}>
@@ -129,5 +143,23 @@ const styles = StyleSheet.create({
   image: {
     width: '90%',
     height: '80%',
+  },
+  typingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 10,
+  },
+  typingText: {
+    fontSize: 16,
+    color: '#00ffff',
+    marginRight: 5,
+  },
+  ellipsis: {
+    fontSize: 24,
+    color: '#00ffff',
+    fontWeight: 'bold',
+    letterSpacing: 2,
+    animation: 'blink 1s infinite',
   },
 });

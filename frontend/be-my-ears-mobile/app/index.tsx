@@ -19,6 +19,8 @@ export default function Index() {
   const [transcribeLang, setTranscribeLang] = useState('en');
   const [translateLang, setTranslateLang] = useState('English');
   const [recordingEnabled, setRecordingEnabled] = useState(false);
+  const [pendingMessageId, setPendingMessageId] = useState<Boolean>(false);
+
 
   const toggleRecording = () => {
     setRecordingEnabled((prev) => !prev);
@@ -36,7 +38,6 @@ export default function Index() {
 
 
   useEffect(() => {
-
      (async () => {
         const granted = await requestPermissions();
         if (!granted){
@@ -45,9 +46,12 @@ export default function Index() {
          }
 
     connectWebSocket((data) => {
+      // if (!data.message_id ) return;
       setMessageReceived(true);
 
       if (data.transcription) {
+        console.log("message_id: ", data.message_id)
+        setPendingMessageId(false);
         const entry = {
           speaker_id: data.transcription.speaker_id,
           text: data.transcription.text,
@@ -87,6 +91,7 @@ return (
       onRecordingStop={() => setIsRecording(false)}
       onSending={() => setIsSending(true)}
       onSent={() => setIsSending(false)}
+      setPendingMessageId={setPendingMessageId}
      
     />
     </View>
@@ -99,6 +104,7 @@ return (
           recording={isRecording}
           sending={isSending}
           received={messageReceived}
+          pendingMessage={pendingMessageId}
         />
     </View>
  
@@ -119,7 +125,7 @@ const styles = StyleSheet.create({
     flex: 6, // Increase this to give it more vertical space
   },
   cameraContainer: {
-    flex: 1.6
+    flex: 1
   }
 });
 
