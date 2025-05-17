@@ -121,12 +121,14 @@ async def process_message(websocket, client_id, message):
         print(f'transcription: {transcription}')
         if not is_valid_transcription(transcription):
             print("⚠️ Ignoring low-quality transcription")
+            await websocket.send(json.dumps(volume_error(timestamp)))
             return
 
         translation = await translate_text(transcription, LANGUAGES[transcribe_language], translate_language)
         print(f'translation: {translation}')
         if translation == 'incoherent':
             print('the txt is not coherent')
+        
             return
 
         # speaker_id, bbox = estimate_speaker(faces, image, cleaned_audio_path)
