@@ -70,7 +70,7 @@ export default function Index() {
 
 return (
   <View style={styles.container}>
-  <StatusBar />
+  <StatusBar hidden= {false} />
 
       <LanguageSelectorModal
         visible={modalVisible}
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
     flex: 6, // Increase this to give it more vertical space
   },
   cameraContainer: {
-    flex: 1
+    flex: 1.6
   }
 });
 

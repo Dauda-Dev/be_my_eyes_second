@@ -30,6 +30,10 @@ export default function CameraFeed({
   const [isBuffering, setIsBuffering] = useState(false);
   const transcribeLangRef = useRef(transcribeLang);
   const translateLangRef = useRef(translateLang);
+  const recordingRef = useRef<Audio.Recording | null>(null);
+  const monitorRef = useRef<NodeJS.Timeout | null>(null);
+  const wasStoppedManuallyRef = useRef(false);
+  
 
   useEffect(() => {
     transcribeLangRef.current = transcribeLang;
@@ -38,15 +42,41 @@ export default function CameraFeed({
 
   const startCaptureLoop = () => {
     if (intervalRef.current) return;
-    setIsBuffering(true)
-    intervalRef.current = setInterval(() => captureAndSend(), 17000);
+
+    setIsBuffering(true);
+    captureAndSend(); // First capture immediately
+
+    intervalRef.current = setInterval(() => captureAndSend(), 13000);
   };
 
-  const stopCaptureLoop = () => {
+  const stopCaptureLoop = async () => {
+    wasStoppedManuallyRef.current = true;
+
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
+
+    if (monitorRef.current) {
+      clearInterval(monitorRef.current);
+      monitorRef.current = null;
+    }
+
+    if (recordingRef.current) {
+      try {
+        const status = await recordingRef.current.getStatusAsync();
+        if (status.isRecording) {
+          await recordingRef.current.stopAndUnloadAsync();
+          console.log("Recording stopped manually.");
+        }
+      } catch (e) {
+        console.warn("Error stopping recording manually:", e);
+      }
+      recordingRef.current = null;
+    }
+  
+    setIsRecording(false);
+    onRecordingStop();
   };
 
   const captureAndSend = async () => {
@@ -58,6 +88,9 @@ export default function CameraFeed({
       setIsRecording(true);
 
       const recording = new Audio.Recording();
+      recordingRef.current = recording;
+
+
       await recording.prepareToRecordAsync({
         android: {
           extension: '.aac',
@@ -80,15 +113,18 @@ export default function CameraFeed({
 
       await recording.startAsync();
 
-      const monitorVolume = setInterval(async () => {
+      monitorRef.current = setInterval(async () => {
         const status = await recording.getStatusAsync();
         if (status.metering) {
           setVolumeLevel(status.metering);
         }
       }, 500);
 
-      await new Promise((res) => setTimeout(res, 15000));
-      clearInterval(monitorVolume);
+      await new Promise((res) => setTimeout(res, 12000));
+      if(monitorRef.current) {
+      clearInterval(monitorRef.current);
+      monitorRef.current = null;
+      }
 
       await recording.stopAndUnloadAsync();
       setIsRecording(false);
@@ -99,6 +135,11 @@ export default function CameraFeed({
       //   quality: 0.1,
       //   skipProcessing: true,
       // });
+
+      if (wasStoppedManuallyRef.current) {
+        wasStoppedManuallyRef.current = false;
+        return;
+      }
 
       const audioUri = recording.getURI();
       const audioBase64 = await fileToBase64(audioUri);
@@ -115,12 +156,15 @@ export default function CameraFeed({
         translate_lang: translateLangRef.current
       });
       onSent();
+
+      recordingRef.current = null;
     } catch (err) {
       console.error('Capture/send error:', err);
       setIsRecording(false);
       onRecordingStop();
       // setIsBuffering(false);
       onSent();
+      recordingRef.current = null;
     }
   };
 
@@ -221,7 +265,7 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   volumeMeterContainer: {
-    position: 'absolute',
+    // position: 'absolute',
     top: 10,
     width: '100%',
     paddingHorizontal: 20,
