@@ -81,23 +81,8 @@ return (
         onClose={() => setModalVisible(false)}
         onSelect={handleLanguageSelect}
       />
-    <View style={styles.cameraContainer}>
-      
-    <CameraFeed
-      transcribeLang = {transcribeLang}
-      translateLang = {translateLang}
-      onLanguageSet={() => handleLanguageSelect}
-      onRecordingStart={() => setIsRecording(true)}
-      onRecordingStop={() => setIsRecording(false)}
-      onSending={() => setIsSending(true)}
-      onSent={() => setIsSending(false)}
-      setPendingMessageId={setPendingMessageId}
+   
      
-    />
-    </View>
-     
-    <Button title="Select Languages" onPress={() => setModalVisible(true)} />
-    
     <View style={styles.transcriptionContainer}>
         <TranscriptionFeed
           entries={transcriptions}
@@ -105,8 +90,33 @@ return (
           sending={isSending}
           received={messageReceived}
           pendingMessage={pendingMessageId}
+          transcribeLang = {transcribeLang}
+        translateLang = {translateLang}
+        onLanguageSet={() => handleLanguageSelect}
+        onRecordingStart={() => setIsRecording(true)}
+        onRecordingStop={() => setIsRecording(false)}
+        onSending={() => setIsSending(true)}
+        onSent={() => setIsSending(false)}
+        setPendingMessageId={setPendingMessageId}
         />
     </View>
+    
+    <Button title={`${transcribeLang} -> ${translateLang}`} onPress={() => setModalVisible(true)} />
+    
+    {/* <View style={styles.cameraContainer}>
+      
+      <CameraFeed
+        transcribeLang = {transcribeLang}
+        translateLang = {translateLang}
+        onLanguageSet={() => handleLanguageSelect}
+        onRecordingStart={() => setIsRecording(true)}
+        onRecordingStop={() => setIsRecording(false)}
+        onSending={() => setIsSending(true)}
+        onSent={() => setIsSending(false)}
+        setPendingMessageId={setPendingMessageId}
+       
+      />
+      </View> */}
  
 
   </View>

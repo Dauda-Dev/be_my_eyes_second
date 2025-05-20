@@ -1,8 +1,8 @@
 import {getClientId} from './getClientId';
 
 
-const WEBSOCKET_BASE_URL = 'wss://home.vsionai.store'; // Replace with your IP or server
-// const WEBSOCKET_BASE_URL = 'ws://192.168.213.215:8000';
+// const WEBSOCKET_BASE_URL = 'wss://home.vsionai.store'; // Replace with your IP or server
+const WEBSOCKET_BASE_URL = 'ws://192.168.213.215:8000';
 
 let websocket: WebSocket | null = null;
 let isConnected = false;

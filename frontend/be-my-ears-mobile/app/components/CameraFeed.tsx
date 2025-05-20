@@ -49,7 +49,7 @@ export default function CameraFeed({
     setIsBuffering(true);
     captureAndSend(); // First capture immediately
 
-    intervalRef.current = setInterval(() => captureAndSend(), 13000);
+    intervalRef.current = setInterval(() => captureAndSend(), 5000);
   };
 
   const stopCaptureLoop = async () => {
@@ -124,7 +124,7 @@ export default function CameraFeed({
         }
       }, 500);
 
-      await new Promise((res) => setTimeout(res, 12000));
+      await new Promise((res) => setTimeout(res, 4000));
       if(monitorRef.current) {
       clearInterval(monitorRef.current);
       monitorRef.current = null;
@@ -208,9 +208,6 @@ export default function CameraFeed({
     <View style={styles.camera}>
      {/* <CameraView style={styles.camera} ref={cameraRef} facing={facing}> */}
       <View style={styles.buttonContainer}>
-        {/* <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
-          <Text style={styles.text}>Flip Camera</Text>
-        </TouchableOpacity> */}
         <TouchableOpacity
           style={[styles.button, isRecording ? styles.buttonStop : styles.buttonStart]}
           onPress={() => (isRecording ? stopCaptureLoop() : startCaptureLoop())}

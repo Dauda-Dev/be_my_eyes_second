@@ -9,7 +9,7 @@ async def translate_text(text: str, lang: str = 'English', lang_to_translate_to:
         res = client.chat.completions.create(
             model="gemma2-9b-it",
             messages=[
-                {"role": "system", "content": f"Translate this {lang} text to {lang_to_translate_to}."},
+                {"role": "system", "content": f"Translate this {lang} text to {lang_to_translate_to}. Do not try to explain, just translate it"},
                 {"role": "user", "content": text}
             ]
         )
